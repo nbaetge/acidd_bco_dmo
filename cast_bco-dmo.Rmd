@@ -1,0 +1,312 @@
+---
+title: "cast_bco-dmo"
+author: "Nicholas Baetge"
+date: "8/18/2020"
+output: github_document
+---
+
+Here we compile our lab's data from the ACIDD bottle file and prepare it for submission to BCO-DMO.
+
+```{r echo = F}
+library(tidyverse)
+library(googledrive)
+library(googlesheets4)
+library(data.table)  
+library(lubridate)
+library(readxl)
+library(openxlsx)
+library(viridis)
+library(ggpubr)
+```
+
+# Import Data
+
+```{r message = F, warning = F}
+
+data <- read_sheet("https://docs.google.com/spreadsheets/d/17l6UIFdWFT3ib3kXXG61SPfuYnKMAT5Tjv-nafnL0lI/edit#gid=103152813", sheet = "Bottle File", skip = 0) %>% 
+  mutate(Leg = as.character(Leg),
+         Date = ymd_hm(Time_Stamp)) %>% 
+  select(Cruise:Time_Stamp, Date, everything())
+
+saveRDS(data, "Input/google_bf.rds")
+
+
+headers <-  read_sheet("https://docs.google.com/spreadsheets/d/17l6UIFdWFT3ib3kXXG61SPfuYnKMAT5Tjv-nafnL0lI/edit#gid=103152813", sheet = "Bottle File Headers", skip = 0) 
+
+saveRDS(headers, "Input/google_bf_headers.rds")
+
+```
+
+# Check Profiles
+
+```{r doc plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(DOC) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = DOC, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("DOC, µmol C L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+
+```{r ba plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(BactAbund) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = BactAbund, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("BA, E8 cells L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+```{r poc plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(POC) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = POC, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("POC, µmol C L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+```{r n plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(NO2_NO3) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = NO2_NO3, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("N+N, µmol N L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+
+
+
+```{r po4 plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(PO4) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = PO4, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("Phosphate, µmol P L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+
+```{r si plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(SiO4) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = SiO4, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("Silicate, µmol P L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+
+```{r tdn plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(TDN) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = TDN, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("TDN, µmol N L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+
+```{r don plot, echo=FALSE, fig.height=6, fig.width=14, message=FALSE, warning=FALSE}
+data %>% 
+  drop_na(TDN) %>% 
+  mutate(DON = TDN - NO2_NO3 - NH4) %>% 
+  drop_na(DON) %>% 
+  mutate(day = day(Date)) %>% 
+  ggplot(aes(x = Z, y = DON, group = interaction(CruiseCN))) +
+  geom_line(aes(color = CruiseCN), size = 0.7) +
+  geom_point(aes(color = CruiseCN), size = 0.7) +
+  labs(x = "Depth, m", y = expression(paste("DON, µmol N L"^-1)), colour = "") +
+  scale_x_reverse() +
+  coord_flip() +
+  # scale_color_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_date(low = "#0db5e6", high = "#d31f2a") +
+  # scale_fill_gradientn(colors = matlab.colors2) +
+  # scale_color_gradientn(colors = matlab.colors2) +
+  scale_fill_viridis() +
+  scale_color_viridis() +
+  # guides(colour = F, fill = F, shape = F, linetype = F) +
+  theme_classic2(base_size = 20) +
+  theme(legend.title = element_blank(),
+        panel.spacing.x = unit(1, "cm"),
+        axis.text.x = element_text(angle = 0),
+        legend.key.size = unit(1, "cm")) +
+  facet_grid(~Leg, scales = "free")
+
+```
+
+# Subset Data 
+
+```{r}
+
+subset <-  data %>%
+  select(Cruise, Station, Time_Stamp, Latitude, Longitude, CruiseCN, SCN, Leg, Niskin, Target_Z, Conductivity:Pressure, PO4:TDN_sd, BactAbund:BactAbund_QF) %>% 
+  drop_na(Z) %>% 
+  mutate(PO4_QF = ifelse(!is.na(PO4), PO4_QF, 9),
+         PO4_QF = ifelse(is.na(PO4_QF), 2, PO4_QF),
+         SiO4_QF = ifelse(!is.na(SiO4), SiO4_QF, 9),
+         SiO4_QF = ifelse(is.na(SiO4_QF), 2, SiO4_QF),
+         NO2_QF = ifelse(!is.na(NO2), NO2_QF, 9),
+         NO2_QF = ifelse(is.na(NO2_QF), 2, NO2_QF),
+         NO2_NO3_QF = ifelse(!is.na(NO2_NO3), NO2_NO3_QF, 9),
+         NO2_NO3_QF = ifelse(is.na(NO2_NO3_QF), 2, NO2_NO3_QF),
+         NH4_QF = ifelse(!is.na(NH4), NH4_QF, 9),
+         NH4_QF = ifelse(is.na(NH4_QF), 2, NH4_QF),
+         POC_QF = ifelse(!is.na(POC), POC_QF, 9),
+         POC_QF = ifelse(is.na(POC_QF), 2, POC_QF),
+         DOC_QF = ifelse(!is.na(DOC), DOC_QF, 9),
+         DOC_QF = ifelse(is.na(DOC_QF), 2, DOC_QF),
+         TDN_QF = ifelse(!is.na(TDN), TDN_QF, 9),
+         TDN_QF = ifelse(is.na(TDN_QF), 2, TDN_QF),
+         BactAbund_QF = ifelse(!is.na(BactAbund), BactAbund_QF, 9),
+         BactAbund_QF = ifelse(is.na(BactAbund_QF), 2, BactAbund_QF)) %>% 
+  mutate_all(funs(replace(., is.na(.), -999))) %>% 
+  select(-Target_Z)
+
+subset_headers <- headers %>% 
+  filter(Type %in% c("Metadata", "CTD Data", "Nutrients", "POM", "DOM", "Bacteria")) %>% 
+  filter(!Header %in% c("Type", "Bottom_Z", "MLD", "DCM", "Target_Z", "Bottle Trip", "Neutral_Density", "Sigma_Theta", "Potential_Temp", "16S_ID")) 
+  
+```
+
+# Export Data
+
+```{r}
+# subset %>%
+#   write_csv(., "Output/ACIDD_BGC_Data.csv")
+# 
+# subset_headers %>%
+#   write_csv(., "Output/ACIDD_BGC_Headers.csv")
+# 
+# path <- "Output/"
+# merge_file_name <- "Output/ACIDD_biogeochem_data_BCO-DMO.xlsx"
+# sheet_names <- c("ACIDD Data", "ACIDD Metadata")
+# 
+# filenames_list <- list.files(path = path, full.names = TRUE)
+# 
+# merge <- lapply(filenames_list,function(filename){
+#     print(paste("Merging",filename,sep = " "))
+#     read.csv(filename)
+# })
+# 
+# names(merge) <- sheet_names
+# 
+# write.xlsx(merge, merge_file_name)
+```
+
+
+
